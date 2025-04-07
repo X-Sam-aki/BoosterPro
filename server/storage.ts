@@ -6,6 +6,8 @@ import {
   subscriptionPlans, type SubscriptionPlan, type InsertSubscriptionPlan,
   subscriptions, type Subscription, type InsertSubscription
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and, desc, asc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -546,4 +548,403 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email));
+    return user;
+  }
+
+  async getUserByFirebaseId(firebaseUid: string): Promise<User | undefined> {
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.firebaseUid, firebaseUid));
+    return user;
+  }
+
+  async createUser(userData: Partial<InsertUser> & { firebaseUid?: string, avatarUrl?: string, displayName?: string }): Promise<User> {
+    // Validate required fields
+    if (!userData.username && !userData.email) {
+      throw new Error("Username or email is required");
+    }
+
+    // Generate a username if not provided
+    if (!userData.username && userData.email) {
+      userData.username = userData.email.split("@")[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+    }
+
+    // Check if username already exists
+    const existingUserByUsername = await this.getUserByUsername(userData.username!);
+    if (existingUserByUsername) {
+      throw new Error("Username already exists");
+    }
+
+    // Check if email already exists if provided
+    if (userData.email) {
+      const existingUserByEmail = await this.getUserByEmail(userData.email);
+      if (existingUserByEmail) {
+        throw new Error("Email already exists");
+      }
+    }
+
+    const [user] = await db
+      .insert(users)
+      .values({
+        username: userData.username!,
+        email: userData.email || `${userData.username}@example.com`,
+        password: userData.password || "",
+        firebaseUid: userData.firebaseUid || null,
+        displayName: userData.displayName || null,
+        avatarUrl: userData.avatarUrl || null,
+        isPremium: false,
+      })
+      .returning();
+
+    return user;
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    const user = await this.getUser(id);
+    if (!user) {
+      return undefined;
+    }
+
+    // Check if username is being updated and already exists
+    if (userData.username && userData.username !== user.username) {
+      const existingUser = await this.getUserByUsername(userData.username);
+      if (existingUser && existingUser.id !== id) {
+        throw new Error("Username already exists");
+      }
+    }
+
+    // Check if email is being updated and already exists
+    if (userData.email && userData.email !== user.email) {
+      const existingUser = await this.getUserByEmail(userData.email);
+      if (existingUser && existingUser.id !== id) {
+        throw new Error("Email already exists");
+      }
+    }
+
+    const [updatedUser] = await db
+      .update(users)
+      .set(userData)
+      .where(eq(users.id, id))
+      .returning();
+
+    return updatedUser;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    // Delete user's social accounts
+    await db.delete(socialAccounts).where(eq(socialAccounts.userId, id));
+
+    // Delete user's orders
+    await db.delete(orders).where(eq(orders.userId, id));
+
+    // Delete user's subscriptions
+    await db.delete(subscriptions).where(eq(subscriptions.userId, id));
+
+    // Delete the user
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  // Social Account methods
+  async getSocialAccount(id: number): Promise<SocialAccount | undefined> {
+    const [account] = await db
+      .select()
+      .from(socialAccounts)
+      .where(eq(socialAccounts.id, id));
+    return account;
+  }
+
+  async getSocialAccountsByUserId(userId: number): Promise<SocialAccount[]> {
+    return db
+      .select()
+      .from(socialAccounts)
+      .where(eq(socialAccounts.userId, userId));
+  }
+
+  async createSocialAccount(accountData: InsertSocialAccount): Promise<SocialAccount> {
+    const [account] = await db
+      .insert(socialAccounts)
+      .values(accountData)
+      .returning();
+    return account;
+  }
+
+  async updateSocialAccount(id: number, accountData: Partial<SocialAccount>): Promise<SocialAccount | undefined> {
+    const account = await this.getSocialAccount(id);
+    if (!account) {
+      return undefined;
+    }
+
+    const [updatedAccount] = await db
+      .update(socialAccounts)
+      .set({ ...accountData, lastUpdated: new Date() })
+      .where(eq(socialAccounts.id, id))
+      .returning();
+
+    return updatedAccount;
+  }
+
+  async deleteSocialAccount(id: number): Promise<void> {
+    await db.delete(socialAccounts).where(eq(socialAccounts.id, id));
+  }
+
+  // Service Package methods
+  async getPackageById(id: number): Promise<ServicePackage | undefined> {
+    const [pkg] = await db
+      .select()
+      .from(servicePackages)
+      .where(eq(servicePackages.id, id));
+    return pkg;
+  }
+
+  async getAllPackages(): Promise<ServicePackage[]> {
+    return db.select().from(servicePackages);
+  }
+
+  async getPackagesByPlatform(platform: string): Promise<ServicePackage[]> {
+    return db
+      .select()
+      .from(servicePackages)
+      .where(eq(servicePackages.platform, platform));
+  }
+
+  async getPackagesByPlatformAndType(platform: string, type: string): Promise<ServicePackage[]> {
+    return db
+      .select()
+      .from(servicePackages)
+      .where(
+        and(
+          eq(servicePackages.platform, platform),
+          eq(servicePackages.type, type)
+        )
+      );
+  }
+
+  // Order methods
+  async getOrderById(id: number): Promise<Order | undefined> {
+    const [order] = await db
+      .select()
+      .from(orders)
+      .where(eq(orders.id, id));
+    return order;
+  }
+
+  async getOrdersByUserId(userId: number): Promise<Order[]> {
+    return db
+      .select()
+      .from(orders)
+      .where(eq(orders.userId, userId))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async createOrder(orderData: InsertOrder): Promise<Order> {
+    const [order] = await db
+      .insert(orders)
+      .values({
+        ...orderData,
+        status: "pending",
+        deliverySpeed: orderData.deliverySpeed || "gradual",
+        dripFeed: orderData.dripFeed || false,
+      })
+      .returning();
+    return order;
+  }
+
+  async updateOrder(id: number, orderData: Partial<Order>): Promise<Order | undefined> {
+    const order = await this.getOrderById(id);
+    if (!order) {
+      return undefined;
+    }
+
+    const [updatedOrder] = await db
+      .update(orders)
+      .set({ ...orderData, updatedAt: new Date() })
+      .where(eq(orders.id, id))
+      .returning();
+
+    return updatedOrder;
+  }
+
+  async deleteOrdersByUserId(userId: number): Promise<void> {
+    await db.delete(orders).where(eq(orders.userId, userId));
+  }
+
+  // Subscription Plan methods
+  async getSubscriptionPlanById(id: number): Promise<SubscriptionPlan | undefined> {
+    const [plan] = await db
+      .select()
+      .from(subscriptionPlans)
+      .where(eq(subscriptionPlans.id, id));
+    return plan;
+  }
+
+  async getAllSubscriptionPlans(): Promise<SubscriptionPlan[]> {
+    return db.select().from(subscriptionPlans);
+  }
+
+  // Subscription methods
+  async getSubscriptionById(id: number): Promise<Subscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.id, id));
+    return subscription;
+  }
+
+  async getSubscriptionByUserId(userId: number): Promise<Subscription | undefined> {
+    const [subscription] = await db
+      .select()
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.userId, userId),
+          eq(subscriptions.status, "active")
+        )
+      );
+    return subscription;
+  }
+
+  async createSubscription(subscriptionData: Partial<InsertSubscription>): Promise<Subscription> {
+    const [subscription] = await db
+      .insert(subscriptions)
+      .values({
+        userId: subscriptionData.userId!,
+        planId: subscriptionData.planId!,
+        stripeSubscriptionId: subscriptionData.stripeSubscriptionId || null,
+        status: "active",
+        currentPeriodStart: subscriptionData.currentPeriodStart || new Date(),
+        currentPeriodEnd: subscriptionData.currentPeriodEnd || new Date(),
+      })
+      .returning();
+    return subscription;
+  }
+
+  async updateSubscription(id: number, subscriptionData: Partial<Subscription>): Promise<Subscription | undefined> {
+    const subscription = await this.getSubscriptionById(id);
+    if (!subscription) {
+      return undefined;
+    }
+
+    const [updatedSubscription] = await db
+      .update(subscriptions)
+      .set({ ...subscriptionData, updatedAt: new Date() })
+      .where(eq(subscriptions.id, id))
+      .returning();
+
+    return updatedSubscription;
+  }
+
+  async cancelSubscription(id: number): Promise<Subscription | undefined> {
+    const subscription = await this.getSubscriptionById(id);
+    if (!subscription) {
+      return undefined;
+    }
+
+    const [cancelledSubscription] = await db
+      .update(subscriptions)
+      .set({ status: "canceled", updatedAt: new Date() })
+      .where(eq(subscriptions.id, id))
+      .returning();
+
+    return cancelledSubscription;
+  }
+}
+
+// Initialize the database with sample data if needed
+async function initializeDatabase() {
+  // Check if we have any service packages already
+  const existingPackages = await db.select().from(servicePackages);
+  if (existingPackages.length === 0) {
+    // Insert sample service packages
+    await db.insert(servicePackages).values([
+      {
+        name: "1,000 Followers",
+        description: "Boost your TikTok followers count with high-quality followers",
+        platform: "tiktok",
+        type: "followers",
+        quantity: 1000,
+        price: 999, // $9.99
+        deliveryTime: "1-2 days",
+        bestValue: false,
+        refillGuarantee: "30 days",
+        features: ["High-quality followers", "Gradual delivery (1-2 days)", "30-day refill guarantee"],
+      },
+      {
+        name: "5,000 Followers",
+        description: "Increase your TikTok popularity with premium followers",
+        platform: "tiktok",
+        type: "followers",
+        quantity: 5000,
+        price: 3999, // $39.99
+        deliveryTime: "2-3 days",
+        bestValue: false,
+        refillGuarantee: "30 days",
+        features: ["High-quality followers", "Gradual delivery (2-3 days)", "30-day refill guarantee", "Save 20% vs. smaller package"],
+      },
+      {
+        name: "10,000 Followers",
+        description: "Achieve TikTok growth with our most popular package",
+        platform: "tiktok",
+        type: "followers",
+        quantity: 10000,
+        price: 6999, // $69.99
+        deliveryTime: "3-5 days",
+        bestValue: true,
+        refillGuarantee: "60 days",
+        features: ["Premium-quality followers", "Gradual delivery (3-5 days)", "60-day refill guarantee", "Save 30% vs. smaller packages"],
+      }
+    ]);
+  }
+
+  // Check if we have any subscription plans already
+  const existingPlans = await db.select().from(subscriptionPlans);
+  if (existingPlans.length === 0) {
+    // Insert sample subscription plans
+    await db.insert(subscriptionPlans).values([
+      {
+        name: "Starter",
+        description: "Perfect for beginners looking to grow their social media presence",
+        price: 1999, // $19.99
+        dailyFollowers: 50,
+        dailyViews: 500,
+        autoReplenish: true,
+        features: ["50 followers daily", "500 views daily", "Basic analytics", "Email support"],
+      },
+      {
+        name: "Professional",
+        description: "Ideal for influencers wanting to grow their audience consistently",
+        price: 4999, // $49.99
+        dailyFollowers: 150,
+        dailyViews: 1500,
+        autoReplenish: true,
+        features: ["150 followers daily", "1,500 views daily", "Detailed analytics", "Priority support", "Content suggestions"],
+      }
+    ]);
+  }
+}
+
+// Initialize the database (can be commented out if not needed)
+initializeDatabase().catch(console.error);
+
+// Use the DatabaseStorage instead of MemStorage
+export const storage = new DatabaseStorage();
