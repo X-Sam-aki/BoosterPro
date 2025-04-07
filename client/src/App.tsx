@@ -5,6 +5,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { ThemeProvider } from "@/components/theme/theme-provider";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
+import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 
 // Pages
 import AuthPage from "@/pages/auth";
@@ -30,30 +34,97 @@ function Router() {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
+  // Render different routes based on authentication status
   return (
-    <Switch>
-      <Route path="/" component={isAuthenticated ? DashboardPage : AuthPage} />
-      <Route path="/dashboard" component={DashboardPage} />
-      <Route path="/marketplace" component={MarketplacePage} />
-      <Route path="/order" component={OrderPage} />
-      <Route path="/profile" component={ProfilePage} />
-      <Route path="/checkout" component={CheckoutPage} />
-      <Route component={NotFound} />
-    </Switch>
+    <ErrorBoundary>
+      <Switch>
+        <Route 
+          path="/" 
+          component={
+            isAuthenticated 
+              ? () => (
+                  <AuthenticatedLayout>
+                    <DashboardPage />
+                  </AuthenticatedLayout>
+                )
+              : AuthPage
+          } 
+        />
+        
+        {/* Authenticated Routes */}
+        {isAuthenticated ? (
+          <>
+            <Route 
+              path="/dashboard" 
+              component={() => (
+                <AuthenticatedLayout>
+                  <DashboardPage />
+                </AuthenticatedLayout>
+              )} 
+            />
+            <Route 
+              path="/marketplace" 
+              component={() => (
+                <AuthenticatedLayout>
+                  <MarketplacePage />
+                </AuthenticatedLayout>
+              )} 
+            />
+            <Route 
+              path="/order" 
+              component={() => (
+                <AuthenticatedLayout>
+                  <OrderPage />
+                </AuthenticatedLayout>
+              )} 
+            />
+            <Route 
+              path="/profile" 
+              component={() => (
+                <AuthenticatedLayout>
+                  <ProfilePage />
+                </AuthenticatedLayout>
+              )} 
+            />
+            <Route 
+              path="/checkout" 
+              component={() => (
+                <AuthenticatedLayout>
+                  <CheckoutPage />
+                </AuthenticatedLayout>
+              )} 
+            />
+          </>
+        ) : (
+          // Redirect to auth page if not authenticated
+          <Route 
+            path="/:any*"
+            component={() => {
+              window.location.href = "/";
+              return null;
+            }}
+          />
+        )}
+        
+        <Route component={NotFound} />
+      </Switch>
+    </ErrorBoundary>
   );
 }
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="system" storageKey="socialboost-theme">
+      <QueryClientProvider client={queryClient}>
+        <Router />
+        <Toaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
