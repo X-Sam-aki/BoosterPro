@@ -11,12 +11,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { ServicePackage, SubscriptionPlan } from "@/lib/types";
+import { useNavigate } from 'react-router-dom';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
 
 export default function MarketplacePage() {
   const [_, navigate] = useLocation();
   const { toast } = useToast();
   const [platform, setPlatform] = useState<string>("tiktok");
   const [category, setCategory] = useState<ServiceCategoryType>("followers");
+  const navigateRouter = useNavigate();
   
   // Check authentication status
   useEffect(() => {
@@ -30,13 +34,13 @@ export default function MarketplacePage() {
   }, [navigate]);
 
   // Fetch packages (we'll use the mock data for now)
-  const { data: packages = defaultPackages } = useQuery({
+  const { data: packages = defaultPackages, isLoading: isLoadingPackages } = useQuery({
     queryKey: ['/api/packages', platform, category],
     enabled: false, // Disable for now as we're using mock data
   });
 
   // Fetch subscription plans (we'll use the mock data for now)
-  const { data: subscriptionPlans = [defaultSubscriptionPlan] } = useQuery({
+  const { data: subscriptionPlans = [defaultSubscriptionPlan], isLoading: isLoadingPlans } = useQuery({
     queryKey: ['/api/subscription-plans', platform],
     enabled: false, // Disable for now as we're using mock data
   });
@@ -52,6 +56,18 @@ export default function MarketplacePage() {
     // For now, we'll just navigate to the checkout page
     navigate(`/checkout?planId=${plan.id}`);
   };
+
+  const handlePurchase = (type: 'package' | 'plan', id: number) => {
+    navigateRouter(`/checkout?type=${type}&id=${id}`);
+  };
+
+  if (isLoadingPackages || isLoadingPlans) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
@@ -106,11 +122,48 @@ export default function MarketplacePage() {
           {packages
             .filter(pkg => pkg.platform === platform && pkg.type === category)
             .map((pkg) => (
-              <ServicePackageCard 
-                key={pkg.id}
-                packageData={pkg}
-                onAddToCart={handleAddToCart}
-              />
+              <Card key={pkg.id} className={pkg.bestValue ? 'border-2 border-primary' : ''}>
+                <CardHeader>
+                  <CardTitle>{pkg.name}</CardTitle>
+                  <CardDescription>{pkg.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <p className="text-2xl font-bold">${pkg.price / 100}</p>
+                    <p className="text-sm text-gray-600">
+                      {pkg.quantity} {pkg.type} • {pkg.deliveryTime}
+                    </p>
+                    <ul className="space-y-1">
+                      {pkg.features.map((feature, index) => (
+                        <li key={index} className="flex items-center">
+                          <svg
+                            className="h-5 w-5 text-green-500 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button
+                    className="w-full"
+                    onClick={() => handlePurchase('package', pkg.id)}
+                  >
+                    Purchase
+                  </Button>
+                </CardFooter>
+              </Card>
             ))}
         </div>
 
@@ -118,11 +171,48 @@ export default function MarketplacePage() {
         <h2 className="text-xl font-bold mb-4">Monthly Growth Plans</h2>
         <div className="grid grid-cols-1 gap-4 mb-6">
           {subscriptionPlans.map((plan) => (
-            <SubscriptionPlanCard 
-              key={plan.id}
-              plan={plan}
-              onSubscribe={handleSubscribe}
-            />
+            <Card key={plan.id}>
+              <CardHeader>
+                <CardTitle>{plan.name}</CardTitle>
+                <CardDescription>{plan.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-2xl font-bold">${plan.price / 100}/month</p>
+                  <p className="text-sm text-gray-600">
+                    {plan.dailyFollowers} daily followers • {plan.dailyViews} daily views
+                  </p>
+                  <ul className="space-y-1">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-center">
+                        <svg
+                          className="h-5 w-5 text-green-500 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button
+                  className="w-full"
+                  onClick={() => handlePurchase('plan', plan.id)}
+                >
+                  Subscribe
+                </Button>
+              </CardFooter>
+            </Card>
           ))}
         </div>
       </div>

@@ -1,119 +1,162 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { DashboardStats, defaultStats } from "@/components/dashboard/dashboard-stats";
-import { MonetizationProgress, defaultTikTokProgress } from "@/components/dashboard/monetization-progress";
-import { AISuggestion, defaultSuggestion } from "@/components/dashboard/ai-suggestion";
-import { RecentActivity, defaultActivities } from "@/components/dashboard/recent-activity";
-import { BottomNavigation } from "@/components/layout/bottom-navigation";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { User } from "@/lib/types";
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Sidebar } from '../components/layout/sidebar';
+import { AISuggestions } from '../components/AISuggestions';
+import { SocialAccountConnection } from '../components/SocialAccountConnection';
+import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
+import { ContentScheduler } from '../components/ContentScheduler';
+import { GrowthCampaigns } from '../components/GrowthCampaigns';
+import { ContentCalendar } from '../components/ContentCalendar';
+import { ContentAnalytics } from '../components/ContentAnalytics';
+import { ContentTemplates } from '../components/ContentTemplates';
+import { SocialInbox } from '../components/SocialInbox';
+import { SocialMonitoring } from '../components/SocialMonitoring';
+import { SocialAnalytics } from '../components/SocialAnalytics';
+import { EnhancedAnalytics } from "@/components/EnhancedAnalytics";
+import { TeamCollaboration } from "@/components/TeamCollaboration";
+import { CampaignManagement } from '@/components/CampaignManagement';
+import { Notifications } from '../components/notifications';
 
-export default function DashboardPage() {
-  const [_, navigate] = useLocation();
-  const [user, setUser] = useState<User | null>(null);
+export default function Dashboard() {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // Check authentication status
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      if (!firebaseUser) {
-        navigate("/");
-      }
-    });
-    
-    return () => unsubscribe();
-  }, [navigate]);
-
-  // Fetch user data
-  const { data: userData, isLoading: isLoadingUser } = useQuery({
-    queryKey: ['/api/users/current'],
-    enabled: !!auth.currentUser,
-    queryFn: async ({ queryKey }) => {
-      // This will use the default query function to fetch user data
-      const response = await fetch(queryKey[0] as string, { credentials: 'include' });
-      if (!response.ok) throw new Error('Failed to fetch user data');
-      return response.json() as Promise<User>;
-    },
-  });
-
-  useEffect(() => {
-    if (userData) {
-      setUser(userData);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error logging out:', error);
     }
-  }, [userData]);
-
-  // Get initials for avatar fallback
-  const getInitials = () => {
-    if (!user?.displayName) return "U";
-    return user.displayName
-      .split(" ")
-      .map(name => name[0])
-      .join("")
-      .toUpperCase();
   };
 
+  if (!user) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
-      <ThemeToggle />
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
       
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center">
-            <div className="text-primary-dark dark:text-primary mr-3">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-                <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
-                <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
-                <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
-                <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
-              </svg>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <header className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <h1 className="text-xl font-bold">Dashboard</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                <Notifications />
+                <Button onClick={handleLogout} variant="ghost" size="sm">
+                  Logout
+                </Button>
+              </div>
             </div>
-            <h1 className="text-xl font-bold">SocialBoost</h1>
           </div>
-          <div className="cursor-pointer" onClick={() => navigate("/profile")}>
-            <Avatar>
-              <AvatarImage src={user?.avatarUrl || ""} alt={user?.displayName || "User"} />
-              <AvatarFallback>{getInitials()}</AvatarFallback>
-            </Avatar>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Welcome, {user?.displayName || 'User'}!</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  Get started by connecting your social media accounts and exploring our services.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Button
+                    onClick={() => navigate('/marketplace')}
+                    className="w-full"
+                  >
+                    Browse Services
+                  </Button>
+                  <Button
+                    onClick={() => navigate('/profile')}
+                    className="w-full"
+                    variant="outline"
+                  >
+                    View Profile
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <p className="text-sm text-gray-600">Connected Instagram account</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <p className="text-sm text-gray-600">Created new content template</p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                    <p className="text-sm text-gray-600">Scheduled 3 posts for next week</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      </header>
 
-      {/* Dashboard Content */}
-      <div className="container mx-auto px-4 py-6 max-w-3xl">
-        {/* Greeting */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold">Hello, {user?.displayName?.split(' ')[0] || 'there'}! 👋</h2>
-          <p className="text-gray-600 dark:text-gray-400">Let's boost your social presence today</p>
-        </div>
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+              <TabsTrigger value="team">Team</TabsTrigger>
+            </TabsList>
 
-        {/* Stats Overview */}
-        <DashboardStats stats={defaultStats} />
+            <TabsContent value="overview" className="space-y-6">
+              <SocialAccountConnection />
+              <AISuggestions />
+            </TabsContent>
 
-        {/* Monetization Progress */}
-        <MonetizationProgress 
-          platformName="TikTok" 
-          progressItems={defaultTikTokProgress} 
-        />
+            <TabsContent value="content" className="space-y-6">
+              <ContentScheduler />
+              <ContentCalendar />
+              <ContentTemplates />
+            </TabsContent>
 
-        {/* AI Suggestion Card */}
-        <AISuggestion
-          title={defaultSuggestion.title}
-          message={defaultSuggestion.message}
-          actionText={defaultSuggestion.actionText}
-          price={defaultSuggestion.price}
-        />
+            <TabsContent value="analytics" className="space-y-6">
+              <AnalyticsDashboard />
+              <ContentAnalytics />
+              <SocialAnalytics />
+              <EnhancedAnalytics />
+            </TabsContent>
 
-        {/* Recent Activity */}
-        <RecentActivity activities={defaultActivities} />
+            <TabsContent value="campaigns" className="space-y-6">
+              <GrowthCampaigns />
+              <CampaignManagement />
+            </TabsContent>
+
+            <TabsContent value="team" className="space-y-6">
+              <TeamCollaboration />
+              <SocialInbox />
+              <SocialMonitoring />
+            </TabsContent>
+          </Tabs>
+        </main>
       </div>
-
-      {/* Bottom Navigation */}
-      <BottomNavigation />
     </div>
   );
 }

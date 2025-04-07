@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
-import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from './contexts/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
 import { Toaster } from "@/components/ui/toaster";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -19,109 +18,79 @@ import ProfilePage from "@/pages/profile";
 import CheckoutPage from "@/pages/checkout";
 import NotFound from "@/pages/not-found";
 
-function Router() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setIsAuthenticated(!!user);
-    });
-    
-    return () => unsubscribe();
-  }, []);
-  
-  // Show loading state while checking authentication
-  if (isAuthenticated === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  // Render different routes based on authentication status
-  return (
-    <ErrorBoundary>
-      <Switch>
-        <Route 
-          path="/" 
-          component={
-            isAuthenticated 
-              ? () => (
-                  <AuthenticatedLayout>
-                    <DashboardPage />
-                  </AuthenticatedLayout>
-                )
-              : AuthPage
-          } 
-        />
-        
-        {/* Authenticated Routes */}
-        {isAuthenticated ? (
-          <>
-            <Route 
-              path="/dashboard" 
-              component={() => (
-                <AuthenticatedLayout>
-                  <DashboardPage />
-                </AuthenticatedLayout>
-              )} 
-            />
-            <Route 
-              path="/marketplace" 
-              component={() => (
-                <AuthenticatedLayout>
-                  <MarketplacePage />
-                </AuthenticatedLayout>
-              )} 
-            />
-            <Route 
-              path="/order" 
-              component={() => (
-                <AuthenticatedLayout>
-                  <OrderPage />
-                </AuthenticatedLayout>
-              )} 
-            />
-            <Route 
-              path="/profile" 
-              component={() => (
-                <AuthenticatedLayout>
-                  <ProfilePage />
-                </AuthenticatedLayout>
-              )} 
-            />
-            <Route 
-              path="/checkout" 
-              component={() => (
-                <AuthenticatedLayout>
-                  <CheckoutPage />
-                </AuthenticatedLayout>
-              )} 
-            />
-          </>
-        ) : (
-          // Redirect to auth page if not authenticated
-          <Route 
-            path="/:any*"
-            component={() => {
-              window.location.href = "/";
-              return null;
-            }}
-          />
-        )}
-        
-        <Route component={NotFound} />
-      </Switch>
-    </ErrorBoundary>
-  );
-}
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function App() {
   return (
     <ThemeProvider defaultTheme="system" storageKey="socialboost-theme">
       <QueryClientProvider client={queryClient}>
-        <Router />
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <AuthenticatedLayout>
+                      <DashboardPage />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/" element={<AuthPage />} />
+              <Route
+                path="/marketplace"
+                element={
+                  <ProtectedRoute>
+                    <AuthenticatedLayout>
+                      <MarketplacePage />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/order"
+                element={
+                  <ProtectedRoute>
+                    <AuthenticatedLayout>
+                      <OrderPage />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <AuthenticatedLayout>
+                      <ProfilePage />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute>
+                    <AuthenticatedLayout>
+                      <CheckoutPage />
+                    </AuthenticatedLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
         <Toaster />
       </QueryClientProvider>
     </ThemeProvider>

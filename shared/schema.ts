@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -18,12 +18,81 @@ export const users = pgTable("users", {
 export const socialAccounts = pgTable("social_accounts", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => users.id),
-  platform: text("platform").notNull(), // 'tiktok', 'instagram', 'facebook'
+  platform: text("platform").notNull(), // 'twitter', 'facebook', 'instagram', 'linkedin'
   username: text("username").notNull(),
-  followerCount: integer("follower_count").default(0),
-  viewCount: integer("view_count").default(0),
-  likeCount: integer("like_count").default(0),
-  lastUpdated: timestamp("last_updated").defaultNow(),
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  tokenExpiresAt: timestamp("token_expires_at"),
+  stats: jsonb("stats").default({ followers: 0, following: 0, posts: 0, engagementRate: 0 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const posts = pgTable("posts", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => socialAccounts.id),
+  platform: text("platform").notNull(), // 'twitter', 'facebook', 'instagram', 'linkedin'
+  content: text("content").notNull(),
+  mediaUrls: text("media_urls").array(),
+  scheduledFor: timestamp("scheduled_for"),
+  publishedAt: timestamp("published_at"),
+  status: text("status").notNull().default("draft"), // 'draft', 'scheduled', 'published', 'failed'
+  engagement: jsonb("engagement").default({ likes: 0, comments: 0, shares: 0, reach: 0 }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const messages = pgTable("messages", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => socialAccounts.id),
+  platform: text("platform").notNull(), // 'twitter', 'facebook', 'instagram', 'linkedin'
+  senderId: text("sender_id").notNull(),
+  senderName: text("sender_name").notNull(),
+  content: text("content").notNull(),
+  status: text("status").notNull().default("unread"), // 'unread', 'read', 'replied'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => socialAccounts.id),
+  platform: text("platform").notNull(), // 'twitter', 'facebook', 'instagram', 'linkedin'
+  postId: text("post_id").notNull(),
+  authorId: text("author_id").notNull(),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
+  status: text("status").notNull().default("unread"), // 'unread', 'read', 'replied'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const mentions = pgTable("mentions", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull().references(() => socialAccounts.id),
+  platform: text("platform").notNull(), // 'twitter', 'facebook', 'instagram', 'linkedin'
+  postId: text("post_id").notNull(),
+  authorId: text("author_id").notNull(),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
+  sentiment: text("sentiment").notNull().default("neutral"), // 'positive', 'neutral', 'negative'
+  status: text("status").notNull().default("unread"), // 'unread', 'read', 'replied'
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const contentTemplates = pgTable("content_templates", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  description: text("description"),
+  platform: text("platform").notNull(), // 'twitter', 'facebook', 'instagram', 'linkedin'
+  content: text("content").notNull(),
+  category: text("category").notNull(),
+  tags: text("tags").array(),
+  usageCount: integer("usage_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const servicePackages = pgTable("service_packages", {
@@ -92,10 +161,44 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export const insertSocialAccountSchema = createInsertSchema(socialAccounts).omit({
   id: true,
-  followerCount: true,
-  viewCount: true,
-  likeCount: true,
-  lastUpdated: true,
+  stats: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPostSchema = createInsertSchema(posts).omit({
+  id: true,
+  engagement: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertCommentSchema = createInsertSchema(comments).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMentionSchema = createInsertSchema(mentions).omit({
+  id: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertContentTemplateSchema = createInsertSchema(contentTemplates).omit({
+  id: true,
+  usageCount: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 export const insertServicePackageSchema = createInsertSchema(servicePackages).omit({
@@ -129,6 +232,21 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 
 export type SocialAccount = typeof socialAccounts.$inferSelect;
 export type InsertSocialAccount = z.infer<typeof insertSocialAccountSchema>;
+
+export type Post = typeof posts.$inferSelect;
+export type InsertPost = z.infer<typeof insertPostSchema>;
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+export type Comment = typeof comments.$inferSelect;
+export type InsertComment = z.infer<typeof insertCommentSchema>;
+
+export type Mention = typeof mentions.$inferSelect;
+export type InsertMention = z.infer<typeof insertMentionSchema>;
+
+export type ContentTemplate = typeof contentTemplates.$inferSelect;
+export type InsertContentTemplate = z.infer<typeof insertContentTemplateSchema>;
 
 export type ServicePackage = typeof servicePackages.$inferSelect;
 export type InsertServicePackage = z.infer<typeof insertServicePackageSchema>;

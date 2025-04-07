@@ -4,10 +4,30 @@ import {
   servicePackages, type ServicePackage, type InsertServicePackage,
   orders, type Order, type InsertOrder,
   subscriptionPlans, type SubscriptionPlan, type InsertSubscriptionPlan,
-  subscriptions, type Subscription, type InsertSubscription
+  subscriptions, type Subscription, type InsertSubscription,
+  post, type Post, type InsertPost,
+  message, type Message, type InsertMessage,
+  comment, type Comment, type InsertComment,
+  mention, type Mention, type InsertMention,
+  contentTemplate, type ContentTemplate, type InsertContentTemplate
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc } from "drizzle-orm";
+
+interface GrowthCampaign {
+  id: number;
+  userId: string;
+  name: string;
+  platform: string;
+  targetMetric: 'followers' | 'views' | 'likes';
+  targetValue: number;
+  dailyLimit: number;
+  startDate: Date;
+  endDate: Date;
+  status: 'active' | 'paused' | 'completed';
+  currentValue: number;
+  progress: number;
+}
 
 export interface IStorage {
   // User methods
@@ -49,6 +69,25 @@ export interface IStorage {
   createSubscription(subscription: Partial<InsertSubscription>): Promise<Subscription>;
   updateSubscription(id: number, subscriptionData: Partial<Subscription>): Promise<Subscription | undefined>;
   cancelSubscription(id: number): Promise<Subscription | undefined>;
+
+  // AI analysis methods
+  getUserStats(userId: string): Promise<UserStats>;
+  getRecentPosts(userId: string, limit: number): Promise<Post[]>;
+  getEngagementHistory(userId: string, days: number): Promise<EngagementData[]>;
+
+  // Scheduled Posts
+  getScheduledPosts(userId: string): Promise<ScheduledPost[]>;
+  getScheduledPost(id: number): Promise<ScheduledPost | null>;
+  createScheduledPost(post: Omit<ScheduledPost, 'id'>): Promise<ScheduledPost>;
+  updateScheduledPost(id: number, post: Partial<ScheduledPost>): Promise<ScheduledPost>;
+  deleteScheduledPost(id: number): Promise<void>;
+
+  // Growth Campaigns
+  getGrowthCampaigns(userId: string): Promise<GrowthCampaign[]>;
+  getGrowthCampaign(id: number): Promise<GrowthCampaign | null>;
+  createGrowthCampaign(campaign: Omit<GrowthCampaign, 'id'>): Promise<GrowthCampaign>;
+  updateGrowthCampaign(id: number, campaign: Partial<GrowthCampaign>): Promise<GrowthCampaign>;
+  deleteGrowthCampaign(id: number): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -546,6 +585,74 @@ export class MemStorage implements IStorage {
       this.subscriptionPlans.set(plan.id, plan);
     });
   }
+
+  // AI analysis methods
+  async getUserStats(userId: string): Promise<UserStats> {
+    // Implementation of getUserStats method
+    throw new Error("Method not implemented");
+  }
+
+  async getRecentPosts(userId: string, limit: number): Promise<Post[]> {
+    // Implementation of getRecentPosts method
+    throw new Error("Method not implemented");
+  }
+
+  async getEngagementHistory(userId: string, days: number): Promise<EngagementData[]> {
+    // Implementation of getEngagementHistory method
+    throw new Error("Method not implemented");
+  }
+
+  // Scheduled Posts
+  async getScheduledPosts(userId: string): Promise<ScheduledPost[]> {
+    // Implementation of getScheduledPosts method
+    throw new Error("Method not implemented");
+  }
+
+  async getScheduledPost(id: number): Promise<ScheduledPost | null> {
+    // Implementation of getScheduledPost method
+    throw new Error("Method not implemented");
+  }
+
+  async createScheduledPost(post: Omit<ScheduledPost, 'id'>): Promise<ScheduledPost> {
+    // Implementation of createScheduledPost method
+    throw new Error("Method not implemented");
+  }
+
+  async updateScheduledPost(id: number, post: Partial<ScheduledPost>): Promise<ScheduledPost> {
+    // Implementation of updateScheduledPost method
+    throw new Error("Method not implemented");
+  }
+
+  async deleteScheduledPost(id: number): Promise<void> {
+    // Implementation of deleteScheduledPost method
+    throw new Error("Method not implemented");
+  }
+
+  // Growth Campaigns
+  async getGrowthCampaigns(userId: string): Promise<GrowthCampaign[]> {
+    // Implementation of getGrowthCampaigns method
+    throw new Error("Method not implemented");
+  }
+
+  async getGrowthCampaign(id: number): Promise<GrowthCampaign | null> {
+    // Implementation of getGrowthCampaign method
+    throw new Error("Method not implemented");
+  }
+
+  async createGrowthCampaign(campaign: Omit<GrowthCampaign, 'id'>): Promise<GrowthCampaign> {
+    // Implementation of createGrowthCampaign method
+    throw new Error("Method not implemented");
+  }
+
+  async updateGrowthCampaign(id: number, campaign: Partial<GrowthCampaign>): Promise<GrowthCampaign> {
+    // Implementation of updateGrowthCampaign method
+    throw new Error("Method not implemented");
+  }
+
+  async deleteGrowthCampaign(id: number): Promise<void> {
+    // Implementation of deleteGrowthCampaign method
+    throw new Error("Method not implemented");
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -867,6 +974,74 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return cancelledSubscription;
+  }
+
+  // AI analysis methods
+  async getUserStats(userId: string): Promise<UserStats> {
+    // Implementation of getUserStats method
+    throw new Error("Method not implemented");
+  }
+
+  async getRecentPosts(userId: string, limit: number): Promise<Post[]> {
+    // Implementation of getRecentPosts method
+    throw new Error("Method not implemented");
+  }
+
+  async getEngagementHistory(userId: string, days: number): Promise<EngagementData[]> {
+    // Implementation of getEngagementHistory method
+    throw new Error("Method not implemented");
+  }
+
+  // Scheduled Posts
+  async getScheduledPosts(userId: string): Promise<ScheduledPost[]> {
+    // Implementation of getScheduledPosts method
+    throw new Error("Method not implemented");
+  }
+
+  async getScheduledPost(id: number): Promise<ScheduledPost | null> {
+    // Implementation of getScheduledPost method
+    throw new Error("Method not implemented");
+  }
+
+  async createScheduledPost(post: Omit<ScheduledPost, 'id'>): Promise<ScheduledPost> {
+    // Implementation of createScheduledPost method
+    throw new Error("Method not implemented");
+  }
+
+  async updateScheduledPost(id: number, post: Partial<ScheduledPost>): Promise<ScheduledPost> {
+    // Implementation of updateScheduledPost method
+    throw new Error("Method not implemented");
+  }
+
+  async deleteScheduledPost(id: number): Promise<void> {
+    // Implementation of deleteScheduledPost method
+    throw new Error("Method not implemented");
+  }
+
+  // Growth Campaigns
+  async getGrowthCampaigns(userId: string): Promise<GrowthCampaign[]> {
+    // Implementation of getGrowthCampaigns method
+    throw new Error("Method not implemented");
+  }
+
+  async getGrowthCampaign(id: number): Promise<GrowthCampaign | null> {
+    // Implementation of getGrowthCampaign method
+    throw new Error("Method not implemented");
+  }
+
+  async createGrowthCampaign(campaign: Omit<GrowthCampaign, 'id'>): Promise<GrowthCampaign> {
+    // Implementation of createGrowthCampaign method
+    throw new Error("Method not implemented");
+  }
+
+  async updateGrowthCampaign(id: number, campaign: Partial<GrowthCampaign>): Promise<GrowthCampaign> {
+    // Implementation of updateGrowthCampaign method
+    throw new Error("Method not implemented");
+  }
+
+  async deleteGrowthCampaign(id: number): Promise<void> {
+    // Implementation of deleteGrowthCampaign method
+    throw new Error("Method not implemented");
   }
 }
 
