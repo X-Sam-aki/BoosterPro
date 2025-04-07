@@ -1,0 +1,263 @@
+App Name (Working Title):
+SocialBoost – Grow Followers, Views & Engagement
+
+Tagline:
+“Your shortcut to social media success – Fast, Easy & Reliable.”
+
+App Purpose & Vision:
+SocialBoost is a cross-platform mobile application built to help users grow their presence on TikTok, Instagram, and Facebook by offering targeted services such as follower boosts, video views, likes, and comments. It also tracks each user's progress toward achieving monetization eligibility (e.g., follower counts, watch time). The app will offer paid packages, subscription plans, referral bonuses, and even free growth options via rewarded ads. With a simple interface, full payment support, and future AI-enhanced tools, it’s designed for anyone looking to become a content creator, influencer, or digital marketer.
+
+Target Audience:
+TikTok, Instagram, and Facebook users aiming to meet monetization or verification requirements
+
+New influencers and creators who need fast growth
+
+Small businesses and marketers
+
+Digital service resellers
+
+Agencies managing social accounts for clients
+
+Platform Support:
+iOS (Apple Store)
+
+Android (Google Play)
+Developed using Flutter or React Native for maximum compatibility and cost-efficiency.
+
+Core Features (Expanded):
+1. User Authentication & Profile Management
+Sign Up / Login via:
+
+Email/Password
+
+Google
+
+Apple ID
+
+Optional phone verification for added trust
+
+User profile with:
+
+Social links (TikTok/IG/FB)
+
+Avatar / Bio
+
+Account verification level (Free, Premium)
+
+2. Dashboard
+Clean overview of:
+
+Followers count
+
+Daily views
+
+Engagement rate
+
+Progress bar for reaching goals (e.g., TikTok monetization: 10k followers, 100k views)
+
+AI-based suggestion cards (e.g., “Buy 1K Views to reach monetization by next week”)
+
+3. Service Packages Marketplace
+Followers (1K, 5K, 10K, 50K+)
+
+Video views (10K to 1M)
+
+Likes / Comments (post-based)
+
+Real vs. bot traffic options
+
+Fast or gradual delivery options
+
+Product details (delivery time, refill policy, guarantees)
+
+4. Order Workflow
+Step-by-step order placement:
+
+Choose platform
+
+Select service
+
+Enter profile/video URL
+
+Choose quantity
+
+Confirm & Pay
+
+Order status tracking:
+
+Processing, In Queue, Delivering, Completed, Failed
+
+Order history with invoice generation
+
+5. Subscription Plans
+Weekly / Monthly / Lifetime access to auto-growth
+
+Discounts vs. one-time orders
+
+AI-driven auto top-up when metrics fall (e.g., replenish 500 followers if count drops)
+
+6. Payments & Billing
+Supports global and local payments:
+
+Stripe (Credit/Debit Cards)
+
+PayPal
+
+Google Pay
+
+Apple Pay
+
+Razorpay, Paystack, Flutterwave (Optional, region-based)
+
+In-app purchases via:
+
+Google Play Billing
+
+Apple IAP
+
+Auto-renewal and cancel options for subscriptions
+
+Invoicing and billing history
+
+7. Loyalty & Reward System
+Points/credits earned by:
+
+Daily app check-in
+
+Watching reward videos (AdMob/Unity Ads)
+
+Completing tasks (Follow a page, Comment on post)
+
+Referring users
+
+Redeem credits for services
+
+VIP badges and exclusive discounts
+
+8. Referral Program
+Unique invite link/code
+
+Earn % commission or points on referrals’ first purchase
+
+Tiered affiliate system (e.g., Silver, Gold, Platinum referrers)
+
+9. Push Notifications & Alerts
+New package alerts
+
+Limited-time offers
+
+Goal progress reminders
+
+Order updates
+
+Payment success/failure notifications
+
+Weekly growth insights
+
+10. Support & Contact
+In-app live chat (e.g., Tawk.to, Crisp, Zendesk)
+
+FAQ page
+
+Email support
+
+Support ticketing system with reply history
+
+Admin Panel (Web-based Dashboard)
+Admin Capabilities:
+Manage users (ban/edit/verify)
+
+Manage services (add/edit/delete packages)
+
+Monitor order stats (Success, Pending, Failed)
+
+Handle manual fulfillment (if not API-based)
+
+Send push notifications and broadcast messages
+
+View analytics (Sales, Growth, User Activity)
+
+Moderate referral system and payouts
+
+Technology Stack:
+Frontend (App):
+Flutter (Dart) or React Native (JavaScript)
+
+Material/Cupertino Design
+
+REST API or Firebase Integration
+
+Backend (API & Admin):
+Node.js with Express
+
+Firebase (optional: Realtime DB or Firestore)
+
+MongoDB or PostgreSQL
+
+AWS or Firebase Hosting
+
+Integrations:
+Payments: Stripe, PayPal, Razorpay, Apple/Google Pay
+
+Notifications: Firebase Cloud Messaging
+
+Ads: Google AdMob / Unity Ads
+
+Analytics: Firebase, Amplitude
+
+Security: JWT Auth, CAPTCHA, Anti-fraud triggers
+
+AI Features (Future-Ready Modules):
+AI suggestions for growth (what to buy & when)
+
+Chatbot support assistant
+
+AI-based post scheduling (auto-recommends best time to post)
+
+Content analysis (e.g., recommend hashtags, titles)
+
+Security & Compliance:
+GDPR & CCPA Compliant
+
+Encrypted user data
+
+Secure payment handling (PCI-DSS)
+
+API throttling & abuse detection
+
+Regular security audits
+
+Monetization Model:
+Direct service purchases
+
+Subscription plans (recurring income)
+
+In-app coin/credit purchases
+
+Ads (rewarded only)
+
+Affiliate partnerships
+
+Premium support or consultation (optional)
+
+Optional Future Modules:
+YouTube growth services
+
+Twitter / Threads integration
+
+Social Media Scheduler
+
+Growth tracking analytics with data charts
+
+Auto-DM for Instagram (in compliance with IG rules)
+
+Design Considerations:
+Minimalist, clean UI with dark/light themes
+
+Simple navigation (Tab or Bottom Nav Bar)
+
+One-click actions wherever possible
+
+Responsive layout for tablets
+
+Animations for orders/progress
